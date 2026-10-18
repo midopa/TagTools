@@ -5,6 +5,7 @@ import struct
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from collections.abc import Callable
 from io import BytesIO
 
 
@@ -117,7 +118,7 @@ class TagItem:
         self.offset = 0
         self.count = 0
         self.isPtr = False
-        self.value: TagObject | list[TagObject] | None = None
+        self.value: list[TagObject] | None = None
 
 
 class TagSectionReader:
@@ -346,7 +347,7 @@ class TagReader:
 
         return ret
 
-    def readObject(self, typ, offset=0):
+    def readObject(self, typ: TagType, offset=0):
         if offset == 0:
             offset = self.f.tell()
 
@@ -458,7 +459,7 @@ class TagReader:
 
         return None
 
-    def getObject(self, index):
+    def getObject(self, index: int):
         item = self.items[index + 1]
 
         if item.typ == None:
@@ -474,7 +475,7 @@ class TagReader:
 
 
 class TagSectionWriter:
-    def __init__(self, w, signature, flag=True):
+    def __init__(self, w: TagWriter, signature: str, flag=True):
         self.w = w
         self.headerOffset = w.f.tell()
         self.flag = flag
@@ -681,7 +682,7 @@ class TagWriter:
             self.writeTypeSection()
             self.writeIndexSection()
 
-    def writeObject(self, obj, offset=0):
+    def writeObject(self, obj: TagObject, offset=0):
         if offset == 0:
             offset = self.f.tell()
 
@@ -754,7 +755,7 @@ class TagWriter:
         if amount != alignment:
             self.writeNulls(amount)
 
-    def makeItem(self, obj, pointer=False):
+    def makeItem(self, obj: TagObject, pointer=False):
         if obj.value == None or (hasattr(obj.value, "__len__") and len(obj.value) <= 0):
             return None
 
@@ -796,7 +797,7 @@ class TagWriter:
 
         return item
 
-    def scanType(self, typ):
+    def scanType(self, typ: TagType):
         if typ != None and not typ in self.types:
             self.types.append(typ)
 
@@ -813,7 +814,7 @@ class TagWriter:
             for iTyp, _ in typ.interfaces:
                 self.scanType(iTyp)
 
-    def scanObjectForType(self, obj):
+    def scanObjectForType(self, obj: TagObject):
         if obj == None:
             return
 
@@ -841,7 +842,12 @@ class TagWriter:
 
 class TagTypeHelper:
     @staticmethod
-    def getAttrib(elem, name, default=None, method=None):
+    def getAttrib[T, D](
+        elem: ET.Element,
+        name: str,
+        default: D | None = None,
+        method: Callable[[str], T] = str,
+    ) -> T | D:
         if name in elem.attrib:
             attribValue = elem.attrib[name]
 
