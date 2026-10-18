@@ -205,13 +205,13 @@ class TagReader:
                 self.types = self.compendium.types
                 return
 
-            with TagSectionReader(self, "TPTR") as t2:
+            with TagSectionReader(self, "TPTR"):
                 pass
 
             with TagSectionReader(self, "TSTR") as t3:
                 typeStrings = [x.decode() for x in self.f.read(t3.size).split(b"\0")]
 
-            with TagSectionReader(self, "TNAM", "TNA1") as t4:
+            with TagSectionReader(self, "TNAM", "TNA1"):
                 typeCount = self.readPacked()
                 self.types = [TagType() for x in range(typeCount)]
                 self.types[0] = None
@@ -277,33 +277,32 @@ class TagReader:
                     if typ.flags & TagFlag.Unknown:
                         raise ValueError("Flag 0x80 exists, handle it!")
 
-            with TagSectionReader(self, "THSH") as t7:
+            with TagSectionReader(self, "THSH"):
                 for i in range(self.readPacked()):
                     typeIndex = self.readPacked()
                     self.types[typeIndex].hsh = self.readFormat("<I")
 
-            with TagSectionReader(self, "TPAD") as t8:
+            with TagSectionReader(self, "TPAD"):
                 pass
 
     def readIndexSection(self):
-        with TagSectionReader(self, "INDX") as t1:
-            with TagSectionReader(self, "ITEM") as t2:
-                while not t2.end:
-                    item = TagItem()
-                    flag = self.readFormat("<I")
-                    item.typ = self.types[flag & 0xFFFFFF]
-                    item.isPtr = bool(flag & 0x10000000)
-                    item.offset = self.dataOffset + self.readFormat("<I")
-                    item.count = self.readFormat("<I")
-                    self.items.append(item)
+        with TagSectionReader(self, "INDX"), TagSectionReader(self, "ITEM") as t2:
+            while not t2.end:
+                item = TagItem()
+                flag = self.readFormat("<I")
+                item.typ = self.types[flag & 0xFFFFFF]
+                item.isPtr = bool(flag & 0x10000000)
+                item.offset = self.dataOffset + self.readFormat("<I")
+                item.count = self.readFormat("<I")
+                self.items.append(item)
 
-            with TagSectionReader(self, "PTCH") as t3:
+            with TagSectionReader(self, "PTCH"):
                 pass
 
     def readRootSection(self):
         with TagSectionReader(self, "TAG0", "TCM0") as t1:
             if t1.signature == "TAG0":
-                with TagSectionReader(self, "SDKV") as t2:
+                with TagSectionReader(self, "SDKV"):
                     version = self.f.read(8).decode()
                     if (
                         version != "20160100"
@@ -525,9 +524,8 @@ class TagWriter:
             w.writeRootSection(obj)
 
     def writeTypeSection(self):
-        with TagSectionWriter(self, "TYPE", False) as t1:
-            with TagSectionWriter(self, "TPTR") as t2:
-                self.writeNulls(8 * len(self.types))
+        with TagSectionWriter(self, "TYPE", False), TagSectionWriter(self, "TPTR"):
+            self.writeNulls(8 * len(self.types))
 
             typeStrings = []
             fieldStrings = []
@@ -543,10 +541,10 @@ class TagWriter:
                     if not member.name in fieldStrings:
                         fieldStrings.append(member.name)
 
-            with TagSectionWriter(self, "TSTR") as t3:
+            with TagSectionWriter(self, "TSTR"):
                 self.f.write("\0".join(typeStrings) + "\0")
 
-            with TagSectionWriter(self, "TNAM") as t4:
+            with TagSectionWriter(self, "TNAM"):
                 self.writePacked(len(self.types))
 
                 for typ in self.types[1:]:
@@ -561,10 +559,10 @@ class TagWriter:
                             else template.value
                         )
 
-            with TagSectionWriter(self, "FSTR") as t5:
+            with TagSectionWriter(self, "FSTR"):
                 self.f.write("\0".join(fieldStrings) + "\0")
 
-            with TagSectionWriter(self, "TBOD") as t6:
+            with TagSectionWriter(self, "TBOD"):
                 for typ in self.types[1:]:
                     self.writePacked(self.types.index(typ))
                     self.writePacked(self.types.index(typ.parent))
@@ -602,7 +600,7 @@ class TagWriter:
                             self.writePacked(self.types.index(t))
                             self.writePacked(flag)
 
-            with TagSectionWriter(self, "THSH") as t7:
+            with TagSectionWriter(self, "THSH"):
                 hashes = [x for x in self.types[1:] if x.hsh]
 
                 self.writePacked(len(hashes))
@@ -611,24 +609,23 @@ class TagWriter:
                     self.writePacked(self.types.index(typ))
                     self.writeFormat("<I", typ.hsh)
 
-            with TagSectionWriter(self, "TPAD") as t8:
+            with TagSectionWriter(self, "TPAD"):
                 pass
 
     def writeIndexSection(self):
-        with TagSectionWriter(self, "INDX", False) as t1:
-            with TagSectionWriter(self, "ITEM") as t2:
-                self.writeNulls(12)
+        with TagSectionWriter(self, "INDX", False), TagSectionWriter(self, "ITEM"):
+            self.writeNulls(12)
 
-                for item in self.items[1:]:
-                    if item.isPtr:
-                        self.writeFormat("<I", self.types.index(item.typ) | 0x10000000)
-                    else:
-                        self.writeFormat("<I", self.types.index(item.typ) | 0x20000000)
+            for item in self.items[1:]:
+                if item.isPtr:
+                    self.writeFormat("<I", self.types.index(item.typ) | 0x10000000)
+                else:
+                    self.writeFormat("<I", self.types.index(item.typ) | 0x20000000)
 
-                    self.writeFormat("<I", item.offset - self.dataOffset)
-                    self.writeFormat("<I", len(item.value))
+                self.writeFormat("<I", item.offset - self.dataOffset)
+                self.writeFormat("<I", len(item.value))
 
-            with TagSectionWriter(self, "PTCH") as t3:
+            with TagSectionWriter(self, "PTCH"):
                 patches = [
                     (self.types.index(key), value)
                     for key, value in list(self.patches.items())
@@ -662,9 +659,8 @@ class TagWriter:
         self.scanObjectForType(obj)
         self.makeItem(obj, True)
 
-        with TagSectionWriter(self, "TAG0", False) as t1:
-            with TagSectionWriter(self, "SDKV") as t2:
-                self.f.write("20160100")
+        with TagSectionWriter(self, "TAG0", False), TagSectionWriter(self, "SDKV"):
+            self.f.write("20160100")
 
             with TagSectionWriter(self, "DATA") as t3:
                 self.dataOffset = t3.headerOffset + 8
