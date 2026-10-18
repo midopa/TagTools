@@ -1405,16 +1405,6 @@ class TagXmlSerializer:
                 self.scanObjectForType(obj2)
 
 
-def findFile(fileName):
-    for arg in sys.argv:
-        path = os.path.join(os.path.dirname(arg), fileName)
-
-        if os.path.exists(path):
-            return path
-
-    raise ValueError(f"{fileName} could not be found.")
-
-
 class TagTypeBackporter:
     @staticmethod
     def findMember(typ, name):
