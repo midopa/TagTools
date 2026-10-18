@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import os
 import struct
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from io import BytesIO
 
 
 class TagSubType:
@@ -41,7 +44,7 @@ class TagMember:
         self.name = ""
         self.flags = 0
         self.byteOffset = 0
-        self.typ = None
+        self.typ: TagType | None = None
         self.tag = None
 
 
@@ -62,19 +65,19 @@ class TagTemplate:
 class TagType:
     def __init__(self, name=""):
         self.name = name
-        self.templates = []
-        self.parent = None
+        self.templates: list[TagTemplate] = []
+        self.parent: TagType | None = None
         self.flags = 1
         self.subTypeFlags = 0
-        self.pointer = None
+        self.pointer: TagType | None = None
         self.version = 0
         self.byteSize = 0
         self.alignment = 0
         self.abstractValue = 0
-        self.members = []
-        self.interfaces = []
+        self.members: list[TagMember] = []
+        self.interfaces: list[tuple[TagType, int]] = []
         self.hsh = 0
-        self.tag = None
+        self.tag: str | None = None
 
     @property
     def superType(self):
@@ -103,7 +106,7 @@ class TagType:
 
 
 class TagObject:
-    def __init__(self, value, typ):
+    def __init__(self, value, typ: TagType):
         self.value = value
         self.typ = typ
         self.attachment = None
@@ -111,15 +114,15 @@ class TagObject:
 
 class TagItem:
     def __init__(self):
-        self.typ = None
+        self.typ: TagType | None = None
         self.offset = 0
         self.count = 0
         self.isPtr = False
-        self.value = None
+        self.value: TagObject | list[TagObject] | None = None
 
 
 class TagSectionReader:
-    def __init__(self, r, *signatures):
+    def __init__(self, r: TagReader, *signatures: str):
         self.r = r
         self.offset = r.f.tell() + 8
         self.size = (r.readFormat(">I") & 0x3FFFFFFF) - 8
@@ -151,13 +154,13 @@ class TagFileType:
 
 
 class TagReader:
-    def __init__(self, f, compendium=None):
+    def __init__(self, f: BytesIO, compendium: TagReader | None = None):
         self.f = f
         self.dataOffset = 0
-        self.types = []
-        self.items = []
-        self.ids = []
-        self.compendium = compendium
+        self.types: list[TagType] = []
+        self.items: list[TagItem] = []
+        self.ids: list[str] = []
+        self.compendium: TagReader | None = compendium
         self.readRootSection()
 
     def __enter__(self):
@@ -504,13 +507,13 @@ class TagSectionWriter:
 
 
 class TagWriter:
-    def __init__(self, f):
+    def __init__(self, f: BytesIO):
         self.f = f
         self.dataOffset = 0
-        self.types = [None]
-        self.items = [None]
-        self.items2 = []
-        self.patches = {}
+        self.types: list[TagType | None] = [None]
+        self.items: list[TagItem | None] = [None]
+        self.items2: list[TagItem] = []
+        self.patches: dict[TagType, list] = {}
 
     def __enter__(self):
         return self
