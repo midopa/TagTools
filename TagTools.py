@@ -209,9 +209,7 @@ class TagReader:
                 pass
 
             with TagSectionReader(self, "TSTR") as t3:
-                typeStrings = list(
-                    x.decode() for x in self.f.read(t3.size).split(b"\0")
-                )
+                typeStrings = [x.decode() for x in self.f.read(t3.size).split(b"\0")]
 
             with TagSectionReader(self, "TNAM", "TNA1") as t4:
                 typeCount = self.readPacked()
@@ -232,9 +230,7 @@ class TagReader:
                         typ.templates.append(template)
 
             with TagSectionReader(self, "FSTR") as t5:
-                fieldStrings = list(
-                    x.decode() for x in self.f.read(t5.size).split(b"\0")
-                )
+                fieldStrings = [x.decode() for x in self.f.read(t5.size).split(b"\0")]
 
             with TagSectionReader(self, "TBOD", "TBDY") as t6:
                 while not t6.end:
