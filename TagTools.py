@@ -84,8 +84,7 @@ class TagType:
         if not self.flags & TagFlag.SubType:
             return self.parent.superType
 
-        else:
-            return self
+        return self
 
     @property
     def subType(self):
@@ -189,10 +188,9 @@ class TagReader:
             signature = f.read(4).decode("unicode_escape")
             if signature == "TAG0":
                 return TagFileType.Object
-            elif signature == "TCM0":
+            if signature == "TCM0":
                 return TagFileType.Compendium
-            else:
-                return TagFileType.Invalid
+            return TagFileType.Invalid
 
     def readTypeSection(self):
         with TagSectionReader(self, "TYPE", "TCRF") as t1:
@@ -346,8 +344,7 @@ class TagReader:
         if flags & TagSubType.IsSigned or signed:
             return ret.lower()
 
-        else:
-            return ret
+        return ret
 
     def readObject(self, typ, offset=0):
         if offset == 0:
@@ -410,18 +407,15 @@ class TagReader:
         if index == 0:
             return []
 
-        else:
-            item = self.items[index]
+        item = self.items[index]
 
-            if item.value == None:
-                item.value = [
-                    self.readObject(
-                        item.typ, item.offset + x * item.typ.superType.byteSize
-                    )
-                    for x in range(item.count)
-                ]
+        if item.value == None:
+            item.value = [
+                self.readObject(item.typ, item.offset + x * item.typ.superType.byteSize)
+                for x in range(item.count)
+            ]
 
-            return item.value
+        return item.value
 
     def readFormat(self, format):
         data = struct.unpack(format, self.f.read(struct.calcsize(format)))
@@ -429,8 +423,7 @@ class TagReader:
         if len(data) == 1:
             return data[0]
 
-        else:
-            return data
+        return data
 
     def readPacked(self):
         byte = self.readFormat("B")
@@ -442,19 +435,18 @@ class TagReader:
                         byte << 24 | self.readFormat("B") << 16 | self.readFormat(">H")
                     ) & 0x7FFFFFF
 
-                else:
-                    return (byte << 16 | self.readFormat(">H")) & 0x1FFFFF
+                return (byte << 16 | self.readFormat(">H")) & 0x1FFFFF
 
-            else:
-                return (byte << 8 | self.readFormat("B")) & 0x3FFF
+            return (byte << 8 | self.readFormat("B")) & 0x3FFF
 
-        else:
-            return byte
+        return byte
 
     def getType(self, name):
         for typ in self.types[1:]:
             if typ.name == name:
                 return typ
+
+        return None
 
     def getItem(self, typ):
         if isinstance(typ, str):
@@ -463,6 +455,8 @@ class TagReader:
         for item in self.items:
             if item.typ == typ:
                 return item
+
+        return None
 
     def getObject(self, index):
         item = self.items[index + 1]
@@ -842,6 +836,8 @@ class TagWriter:
             if typ.name == name:
                 return typ
 
+        return None
+
 
 class TagTypeHelper:
     @staticmethod
@@ -852,11 +848,9 @@ class TagTypeHelper:
             if method != None:
                 return method(attribValue)
 
-            else:
-                return attribValue
+            return attribValue
 
-        else:
-            return default
+        return default
 
     @staticmethod
     def loadTypes(inputFileName):
@@ -934,6 +928,8 @@ class TagXmlParser:
             if typ and typ.name.replace("::", "") == name:
                 return typ
 
+        return None
+
     def findObject(self, name):
         if isinstance(name, TagType):
             name = name.name
@@ -943,6 +939,8 @@ class TagXmlParser:
         for i in range(len(self.objectElems)):
             if self.objectElems[i].get("type") == name:
                 return self.parseObject(i + 1)
+
+        return None
 
     def parseObjId(self, val):
         if val.startswith("#"):
@@ -997,16 +995,16 @@ class TagXmlParser:
         if typ.superType.subType == TagSubType.String:
             return TagObject(elem.text, typ)
 
-        elif (
+        if (
             typ.superType.subType >= TagSubType.Bool
             and typ.superType.subType <= TagSubType.Float
         ):
             return self.parseValueText(typ, elem.text)
 
-        elif typ.superType.subType == TagSubType.Pointer:
+        if typ.superType.subType == TagSubType.Pointer:
             return TagObject(self.parseObject(self.parseObjId(elem.text)), typ)
 
-        elif typ.superType.subType == TagSubType.Class:
+        if typ.superType.subType == TagSubType.Class:
             members = {x.name: x for x in typ.superType.allMembers}
 
             for memberElem in elem:
@@ -1036,8 +1034,10 @@ class TagXmlParser:
                 typ,
             )
 
-        elif typ.superType.subType & 0xF == TagSubType.Array:
+        if typ.superType.subType & 0xF == TagSubType.Array:
             return self.parseArray(typ, elem)
+
+        return None
 
     def parseObject(self, index):
         obj = self.objects[index]
@@ -1052,7 +1052,7 @@ class TagXmlParser:
                         objElem.get("type")
                     )
                 )
-                return
+                return None
 
             obj2 = self.parseValue(typ, objElem)
 
@@ -1114,25 +1114,24 @@ class TagXmlSerializer:
         if typ.subType == TagSubType.Bool or typ.subType == TagSubType.Int:
             if typ.subTypeFlags & TagSubType.Int8:
                 return "byte"
-            else:
-                return "int"
+            return "int"
 
-        elif typ.subType == TagSubType.String:
+        if typ.subType == TagSubType.String:
             return "string"
 
-        elif typ.subType == TagSubType.Float:
+        if typ.subType == TagSubType.Float:
             return "real"
 
-        elif typ.subType == TagSubType.Pointer:
+        if typ.subType == TagSubType.Pointer:
             return "ref"
 
-        elif typ.subType == TagSubType.Class:
+        if typ.subType == TagSubType.Class:
             return "struct"
 
-        elif typ.subType == TagSubType.Array:
+        if typ.subType == TagSubType.Array:
             return "array"
 
-        elif typ.subType == TagSubType.Tuple:
+        if typ.subType == TagSubType.Tuple:
             return "tuple"
 
         return ""
@@ -1146,11 +1145,13 @@ class TagXmlSerializer:
         if typ.subType == TagSubType.Bool:
             return str(1 if obj.value else 0)
 
-        elif typ.subType == TagSubType.Int:
+        if typ.subType == TagSubType.Int:
             return str(obj.value)
 
-        elif typ.subType == TagSubType.Float:
+        if typ.subType == TagSubType.Float:
             return self.getFloatString(obj.value)
+
+        return ""
 
     def makeNumArray(self, obj):
         index = 16 if obj.typ.superType.pointer.superType.byteSize == 1 else 8
@@ -1246,6 +1247,8 @@ class TagXmlSerializer:
                     elem.attrib.pop("size")
 
             return elem
+
+        return None
 
     def serializeMemberProp(self, parent, typ):
         if typ == None:
@@ -1406,12 +1409,14 @@ class TagTypeBackporter:
         for member in typ.members:
             if member.name == name:
                 return member
+        return None
 
     @staticmethod
     def findType(types, name):
         for typ in types:
             if typ.name == name:
                 return typ
+        return None
 
     @staticmethod
     def backportTypes2012(types):
