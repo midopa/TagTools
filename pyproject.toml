@@ -1,0 +1,19 @@
+[project]
+name = "tagtools"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+tagtools = "tagtools:main"
+
+[dependency-groups]
+dev = [
+    "ruff",
+]
+
+[tool.ruff.lint]
+# extend-select = ['B', 'FA', 'I', 'ICN', 'INP', 'ISC', 'PERF', 'RET', 'TID', 'UP']
+
+[tool.uv]
+exclude-newer = "14 days"
