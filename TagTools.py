@@ -1512,7 +1512,7 @@ def findFile(fileName, mandatory=True):
             return path
 
     if mandatory:
-        raise ValueError("AssetCc2.exe could not be found.")
+        raise ValueError(f"{fileName} could not be found.")
 
     return None
 
