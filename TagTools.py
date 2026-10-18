@@ -602,8 +602,8 @@ class TagWriter:
                     if typ.flags & TagFlag.Interfaces:
                         self.writePacked(len(typ.interfaces))
 
-                        for typ, flag in typ.interfaces:
-                            self.writePacked(self.types.index(typ))
+                        for t, flag in typ.interfaces:
+                            self.writePacked(self.types.index(t))
                             self.writePacked(flag)
 
             with TagSectionWriter(self, "THSH") as t7:
@@ -1342,8 +1342,8 @@ class TagXmlSerializer:
                 elem.text = i + hor
             if not elem.tail or not elem.tail.strip():
                 elem.tail = i
-            for elem in elem:
-                TagXmlSerializer.indent(elem, level + 1, hor, ver)
+            for e in elem:
+                TagXmlSerializer.indent(e, level + 1, hor, ver)
             if not elem.tail or not elem.tail.strip():
                 elem.tail = i
         else:
