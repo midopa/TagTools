@@ -216,13 +216,13 @@ class TagReader:
 
             with TagSectionReader(self, "TNAM", "TNA1"):
                 typeCount = self.readPacked()
-                self.types = [TagType() for x in range(typeCount)]
+                self.types = [TagType() for _ in range(typeCount)]
                 self.types[0] = None
 
                 for typ in self.types[1:]:
                     typ.name = typeStrings[self.readPacked()]
 
-                    for i in range(self.readPacked()):
+                    for _ in range(self.readPacked()):
                         template = TagTemplate(
                             typeStrings[self.readPacked()], self.readPacked()
                         )
@@ -263,7 +263,7 @@ class TagReader:
                         typ.abstractValue = self.readPacked()
 
                     if typ.flags & TagFlag.Members:
-                        for i in range(self.readPacked()):
+                        for _ in range(self.readPacked()):
                             member = TagMember()
                             member.name = fieldStrings[self.readPacked()]
                             member.flags = self.readPacked()
@@ -281,7 +281,7 @@ class TagReader:
                         raise ValueError("Flag 0x80 exists, handle it!")
 
             with TagSectionReader(self, "THSH"):
-                for i in range(self.readPacked()):
+                for _ in range(self.readPacked()):
                     typeIndex = self.readPacked()
                     self.types[typeIndex].hsh = self.readFormat("<I")
 
@@ -322,7 +322,7 @@ class TagReader:
 
             elif t1.signature == "TCM0":
                 with TagSectionReader(self, "TCID") as t4:
-                    for i in range(t4.size / 8):
+                    for _ in range(t4.size / 8):
                         self.ids.append(self.f.read(8).decode())
 
                 self.readTypeSection()
@@ -816,7 +816,7 @@ class TagWriter:
             for member in typ.members:
                 self.scanType(member.typ)
 
-            for iTyp, flag in typ.interfaces:
+            for iTyp, _ in typ.interfaces:
                 self.scanType(iTyp)
 
     def scanObjectForType(self, obj):
