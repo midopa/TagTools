@@ -282,7 +282,7 @@ class TagReader:
             with TagSectionReader(self, "THSH"):
                 for _ in range(self.readPacked()):
                     typeIndex = self.readPacked()
-                    self.types[typeIndex].hsh = self.readFormat("<I")
+                    self.types[typeIndex].hsh = self._read_lil_end_int()
 
             with TagSectionReader(self, "TPAD"):
                 pass
@@ -291,11 +291,11 @@ class TagReader:
         with TagSectionReader(self, "INDX"), TagSectionReader(self, "ITEM") as t2:
             while not t2.end:
                 item = TagItem()
-                flag = self.readFormat("<I")
+                flag = self._read_lil_end_int()
                 item.typ = self.types[flag & 0xFFFFFF]
                 item.isPtr = bool(flag & 0x10000000)
-                item.offset = self.dataOffset + self.readFormat("<I")
-                item.count = self.readFormat("<I")
+                item.offset = self.dataOffset + self._read_lil_end_int()
+                item.count = self._read_lil_end_int()
                 self.items.append(item)
 
             with TagSectionReader(self, "PTCH"):
@@ -402,8 +402,11 @@ class TagReader:
         self.f.seek(offset + typ.byteSize)
         return TagObject(value, typOrg)
 
+    def _read_lil_end_int(self) -> int:
+        return self.readFormat("<I")
+
     def readItemPtr(self):
-        index = self.readFormat("<I")
+        index = self._read_lil_end_int()
 
         if index == 0:
             return []
@@ -426,8 +429,8 @@ class TagReader:
 
         return data
 
-    def readPacked(self):
-        byte = self.readFormat("B")
+    def readPacked(self) -> int:
+        byte: int = self.readFormat("B")
 
         if byte & 0x80:
             if byte & 0x40:
