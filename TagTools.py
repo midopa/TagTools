@@ -7,6 +7,7 @@ import sys
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from io import BytesIO
+from pathlib import Path
 
 
 class TagSubType:
@@ -1504,12 +1505,14 @@ class TagTypeBackporter:
         return types
 
 
-def findFile(fileName, mandatory=True):
+def findFile(fileName: str, mandatory=True):
     for arg in sys.argv:
-        path = os.path.join(os.path.dirname(arg), fileName)
-
-        if os.path.exists(path):
-            return path
+        path = Path(arg).parent / fileName
+        if path.exists():
+            return path.absolute()
+        path = Path(arg).parent / "Dependencies" / fileName
+        if path.exists():
+            return path.absolute()
 
     if mandatory:
         raise ValueError(f"{fileName} could not be found.")
