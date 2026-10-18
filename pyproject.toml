@@ -13,6 +13,7 @@ dev = [
 ]
 
 [tool.ruff.lint]
+extend-select = ['FA', 'I', 'ICN', 'INP', 'ISC', 'PERF', 'TID', 'UP']
 # extend-select = ['B', 'FA', 'I', 'ICN', 'INP', 'ISC', 'PERF', 'RET', 'TID', 'UP']
 
 [tool.uv]
